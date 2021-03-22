@@ -17,13 +17,15 @@ begin
 
 rescue
 
-  STDERR.puts "This is not an AWS EC2 instance or unable to contact the AWS instance-data web server.\n"
+  STDERR.puts "This is not an AWS EC2 instance or unable to contact the AWS instance-data web server."
+  exit(1)
 
 end
 
 if !instance_id.is_a? String then
 
-  STDERR.puts "instance_id is not a string\n"
+  STDERR.puts "instance_id is not a string"
+  exit(1)
 
 else
 
@@ -36,10 +38,16 @@ else
 
     # Some edge cases may require multiple attempts to re-run 'aws ec2 describe-tags' due to API rate limits
     # Making up to 6 attempts with sleep time ranging between 4-10 seconds after each unsuccessful attempt
+    jsonString = ''
     for i in 1..6
       jsonString = `aws ec2 describe-tags --filters "Name=resource-id,Values=#{instance_id}" --region #{region} --output json`
       break if jsonString != ''
       sleep rand(4..10)
+    end
+
+    if jsonString == ''
+      STDERR.puts "Could not fetch tags"
+      exit(1)
     end
 
     # convert json string to hash
@@ -73,7 +81,8 @@ else
 
           rescue
 
-            STDERR.puts "Couldn't create /etc/puppetlabs/puppet/csr_attributes.yaml\n"
+            STDERR.puts "Couldn't create /etc/puppetlabs/puppet/csr_attributes.yaml"
+            exit(1)
 
           ensure
 
@@ -81,16 +90,22 @@ else
 
           end
         else
-          STDERR.puts "No puppet tags have been found\n"
+          STDERR.puts "No puppet tags have been found"
+          exit(1)
         end
       else
-       STDERR.puts "No tags have been found\n"
+       STDERR.puts "No tags have been found"
+       exit(1)
       end
     end
 
   rescue
 
-    STDERR.puts "awscli exec failed\n"
+    STDERR.puts "aws cli exec failed"
+    exit(1)
 
   end
+
+  exit(0)
+
 end
